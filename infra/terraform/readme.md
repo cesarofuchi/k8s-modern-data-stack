@@ -1,10 +1,8 @@
-# k8s-modern-data-stack
-
 # Infra
 
 ## How to create a kind cluster
 
-To create a cluster with `kind` We need to write a `.yaml` file with cluster specifications. Save the following steps in a file named  `kind.yaml`.
+To create a cluster with `kind` We need to write a `.yaml` file with cluster specifications. Save the following steps in a file named  `kind_cluster.yaml`.
 
 ```yaml
 kind: Cluster
@@ -18,7 +16,7 @@ nodes:
 To create a cluster use:
 
 ```bsh
-kind create cluster --name modern-stack --config kind.yaml
+kind create cluster --name modern-stack --config kind_cluster.yaml
 ```
 
 You can now check your cluster with:
@@ -45,6 +43,8 @@ To switching between contexts You can use `kubectl config use-context` with the 
 
 ```bsh
 kubectl config use-context kind-modern-stack
+
+#another option is using kubectx
 ```
 
 We can see the nodes to created cluster: 
@@ -53,15 +53,55 @@ We can see the nodes to created cluster:
 kubectl get nodes
 ```
 
+```bsh
+NAME                         STATUS   ROLES           AGE     VERSION
+modern-stack-control-plane   Ready    control-plane   2m52s   v1.29.2
+modern-stack-worker          Ready    <none>          2m27s   v1.29.2
+modern-stack-worker2         Ready    <none>          2m28s   v1.29.2
+```
+
 Some commands to interact with your cluster:
 
 ```bsh
 # get context
 $ kubectx
-k3d-onion-dev
+docker-desktop
 kind-modern-stack
-minikube
 ```
+
+## Volume Storage and Volume Storage with KIND
+
+To understand Volume Storage (MINIO in our case) let's first understand how the Cloud providers 
+
+https://aws.amazon.com/pt/blogs/storage/persistent-storage-for-kubernetes/
+
+### Persitance Volume
+
+A PV is an abstract component, and the actual physical storage must come from somewhere. Here are a few examples:
+
+csi: Container Storage Interface (CSI) → (for example, Amazon EFS, Amazon EBS, Amazon FSx, etc.)
+iscsi: iSCSI (SCSI over IP) storage
+local: Local storage devices mounted on nodes
+nfs: Network File System (NFS) storage
+
+### Persistent volume claims PVC
+A Persistent Volume (PV) represents an actual storage volume. Kubernetes has an additional layer of abstraction necessary for attaching a PV to a Pod: the PersistentVolumeClaim (PVC).
+
+A PV represents the actual storage volume, and the PVC represents the request for storage that a Pod makes to get the actual storage.
+
+The separation between PV and PVC relates to the idea that there are two types of people in a Kubernetes environment:
+
+Kubernetes administrator: this person is supposed to maintain the cluster, operate it, and add computational resources such as persistent storage.
+Kubernetes application developer: this person is supposed to develop and deploy the application.
+Put simply, the developer consumes the computational resources offered by the administrator. Kubernetes was built with the idea that a PV object should belong to the cluster administrator scope, whereas a PVC object belong to the application developer scope.
+
+Essentially, a Pod cannot mount a PV object directly. It needs to explicitly ask for it. And that asking action is achieved by creating a PVC object and attaching it to the Pod. This is the only reason why this additional layer of abstraction exists. PVCs and PVs have a one-to-one mapping (a PV can only be associated with a single PVC).
+
+Persistent Volume and Persistent Volume Claim
+
+This blog post includes a demo of this process of attaching persistent storage to a Pod, but before that, we need to provide some background on CSI drivers.
+
+https://stackoverflow.com/questions/62694361/how-to-reference-a-local-volume-in-kind-kubernetes-in-docker
 
 ## Creating PV and PVC
 
@@ -81,6 +121,16 @@ Create this resources with:
 kubectl apply -f pv-config.yaml 
 kubectl apply -f pvc-config.yaml 
 
+
+kubectl apply -f infra/src/private_volumes/pv-config.yaml 
+persistentvolume/pv-modern-stack-worker created
+persistentvolume/pv-modern-stack-worker2 created
+
+kubectl apply -f infra/src/private_volumes/pvc-config.yaml
+persistentvolumeclaim/pvc-modern-stack-worker created
+persistentvolumeclaim/pvc-modern-stack-worker2 created
+
+
 ```
 
 Then We can use this resources in Our MinIO pods.
@@ -91,7 +141,11 @@ Then We can use this resources in Our MinIO pods.
 
 Direct-attached storage (DAS) refers to digital storage directly connected to the computer in use, in contrast to storage accessed via a computer network (such as network-attached storage). DAS comprises one or more storage units like hard drives, solid-state drives, and optical disc drives housed within an external enclosure. The term "DAS" is a retronym, highlighting the distinction from storage area network (SAN) and network-attached storage (NAS).
 
-https://www.youtube.com/watch?v=DQ8rgSXfZRc
+### Kubectl Krew
+
+Krew is the plugin manager for kubectl command-line tool.
+
+https://krew.sigs.k8s.io/
 
 ```sh
 # Install DirectPV Krew plugin
@@ -103,6 +157,12 @@ kubectl directpv install
 # Get information of the installation
 kubectl directpv info
 
+┌────────────────────────┬──────────┬───────────┬─────────┬────────┐
+│ NODE                   │ CAPACITY │ ALLOCATED │ VOLUMES │ DRIVES │
+├────────────────────────┼──────────┼───────────┼─────────┼────────┤
+│ • modern-stack-worker  │ -        │ -         │ -       │ -      │
+│ • modern-stack-worker2 │ -        │ -         │ -       │ -      │
+└────────────────────────┴──────────┴───────────┴─────────┴────────┘
 # Add drives
 
 ## Probe and save drive information to drives.yaml file.
@@ -117,7 +177,6 @@ kubectl directpv list drives
 ```
 
 ## Using MetalLB to provision External IP for LoadBalancer service on Kind Kubernetes cluster (Bare Metal)
-
 
 MetalLB is a load-balancer implementation for bare metal Kubernetes clusters using standard routing protocols. This means that you can use MetalLB to expose services with external IPs in scenarios where you do not have cloud providers or load balancers that can provide this functionality natively.
 MetalLB is a service for Kubernetes that provides load balancing to application services in the Kubernetes environment. It allows external traffic to reach services inside the Kubernetes cluster.
@@ -137,19 +196,7 @@ This will open the Vim editor. Using the arrow keys on the keyboard, scroll down
 Then install Metallb by Manifest:
 
 ```bash
-
-
-#helm repo add metallb https://metallb.github.io/metallb
-#helm install metallb metallb/metallb
-
-#alternative:
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.3/config/manifests/metallb-native.yaml
-
-kubectl apply -f metallb_config.yaml
-kubectl apply -f infra/src/local_kubernetes/metallb/metallb_config.yaml
-
-
-
 ```
 
 - Config IP's pools
@@ -183,19 +230,12 @@ helm repo add argo https://argoproj.github.io/argo-helm
 
 - Build using Terraform
 
-kubectl create namespace gitops
-
 Create a `.tf` file with your requirements to the resource. My requirements are in `argocd.tf` file. Then, just execute the following commands:
 
 ```bsh
 terraform init
 terraform plan
 terraform apply -auto-approve
-
-#check
-kubectl get svc argocd-server -n gitops
-kubectl patch svc argocd-server -n gitops -p '{"spec": {"type": "LoadBalancer"}}'
-kubectl get svc argocd-server -n gitops
 ```
 
 - Manual configuration to your service:
@@ -215,13 +255,8 @@ Configure a user and a password to login:
 ```sh
 
 kubectl get svc argocd-server -n gitops
-
-kubectl port-forward svc/argocd-server -n gitops 8080:443
-localhost:8080
-
 # get argocd password
-kubectl -n gitops get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | 
-base64 -d; echo
+kubectl -n gitops get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
 ```
 
 - Install ArgoCD CLI and do your login:
@@ -234,16 +269,9 @@ brew install argocd
 ```sh
 argocd login "<cluster_ip>" --username admin --password "xxxx" --insecure
 argocd login "172.18.0.50" --username admin --password "lbPF8ocqQqjhK74d" --insecure
-
-argocd login "localhost:8080" --username admin --password "BnB21V3LBSPXkcfv" --insecure
-
-argocd cluster add kind-modern-stack --label environment=dev --insecure --in-cluster -y --upsert
-argocd cluster add kind-modern-stack --label environment=dev --insecure --in-cluster
 ```
 
 - Add cluster to ArgoCD
-https://github.com/argoproj/argo-cd/issues/4204
-
 
 To add our cluster into ArgoCD, We need to change the cluster id in `.kube/config`. First get the endpoint of kubernetes cluster.
 
@@ -322,6 +350,9 @@ The following steps are create the `.yaml` file to specify the pods with service
 
 MinIO is an open-source, distributed object storage software designed to be scalable, high-performance, and highly available. It is capable of storing and retrieving large volumes of unstructured data such as images, videos, documents, and other file types. MinIO implements the Amazon Web Services (AWS) S3 object storage protocol, making it compatible with many tools and applications that use this protocol.
 
+1- change the minio-operator.yaml 
+- repo <your git> and verify the path for the yaml
+- destination:name<your cluster name>
 ```bash
 kubectl apply -f app-manifests/deepstorage/minio-operator.yaml
 ```
@@ -329,6 +360,12 @@ kubectl apply -f app-manifests/deepstorage/minio-operator.yaml
 ## Install MinIo Tenant
 
 MinIO Tenant is a more recent feature of MinIO that provides the ability to share a single MinIO cluster among multiple teams, departments, or clients. It offers data and resource isolation for each tenant, allowing different groups of users to share the same storage environment without compromising security or performance. MinIO Tenant simplifies data management in multi-tenant environments by providing efficient and scalable features for tenant creation, isolation, access control, and monitoring.
+
+1- change the minio-operator.yaml 
+- repo <your git> and verify the path for the yaml
+- destination:name<your cluster name>
+2 - change StorageClass at the src/helm-charts/minio-tenant/values.yaml
+- use standard and not default
 
 ```bash
 kubectl apply -f app-manifests/deepstorage/minio-tenant.yaml

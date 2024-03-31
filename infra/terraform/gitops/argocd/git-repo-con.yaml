@@ -6,6 +6,6 @@ metadata:
   labels:
     argocd.argoproj.io/secret-type: repository
 stringData:
-  url: https://github.com/WesleyJw/modern-data-stack.git
-  password: XXX
-  username: not-used
+  url: https://github.com/cesarofuchi/k8s-modern-data-stack.git    
+  password: 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
+  username: cesarofuchi

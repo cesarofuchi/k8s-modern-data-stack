@@ -39,7 +39,7 @@ tenant:
       ## size specifies the capacity per volume
       size: 100Gi
       ## storageClass specifies the storage class name to be used for this pool
-      storageClassName: default
+      storageClassName: standard
       ## Used to specify annotations for pods
       annotations: { }
       ## Used to specify labels for pods
@@ -112,8 +112,10 @@ tenant:
   #   - name: my-minio-bucket
   #     objectLock: false        # optional
   #     region: us-east-1        # optional
-  buckets: [ ]
-  ## List of secret names to use for generating MinIO users during tenant provisioning
+  buckets: 
+    - name: landing
+    - name: metastore
+    - name: trino  ## List of secret names to use for generating MinIO users during tenant provisioning
   users: [ ]
   ## PodManagement policy for MinIO Tenant Pods. Can be "OrderedReady" or "Parallel"
   ## Refer https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#pod-management-policy
