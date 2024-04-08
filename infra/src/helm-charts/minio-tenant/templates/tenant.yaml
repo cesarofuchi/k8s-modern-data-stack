@@ -40,7 +40,7 @@ spec:
         metadata:
           name: data
         spec:
-          storageClassName: standard
+          storageClassName: {{ dig "storageClassName" "" . }}
           accessModes:
             - ReadWriteOnce
           resources:
