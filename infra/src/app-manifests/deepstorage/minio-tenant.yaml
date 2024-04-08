@@ -13,7 +13,7 @@ spec:
       valueFiles:
         - values.yaml
   destination:
-      name: 'kind-modern-stack'
+      name: 'docker-desktop'
       namespace: deepstorage
       server: ''
   syncPolicy:

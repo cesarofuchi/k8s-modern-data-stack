@@ -7,5 +7,5 @@ metadata:
     argocd.argoproj.io/secret-type: repository
 stringData:
   url: https://github.com/cesarofuchi/k8s-modern-data-stack.git    
-  password: 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
+  password: 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
   username: cesarofuchi
