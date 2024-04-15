@@ -112,10 +112,12 @@ tenant:
   #   - name: my-minio-bucket
   #     objectLock: false        # optional
   #     region: us-east-1        # optional
-  buckets: 
+  buckets:
     - name: landing
     - name: metastore
-    - name: trino  ## List of secret names to use for generating MinIO users during tenant provisioning
+    - name: trino
+    - name: owshq
+  ## List of secret names to use for generating MinIO users during tenant provisioning
   users: [ ]
   ## PodManagement policy for MinIO Tenant Pods. Can be "OrderedReady" or "Parallel"
   ## Refer https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#pod-management-policy
