@@ -238,7 +238,7 @@ Then replace this endpoint into `~/.kube/config`.
 Now add your cluster with:
 
 ```sh
-argocd cluster add kind-modern-stack
+argocd cluster add docker-desktop
 ```
 
 - Add Github Repo:

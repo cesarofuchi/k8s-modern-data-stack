@@ -268,7 +268,8 @@ brew install argocd
 
 ```sh
 argocd login "<cluster_ip>" --username admin --password "xxxx" --insecure
-argocd login "172.18.0.50" --username admin --password "lbPF8ocqQqjhK74d" --insecure
+argocd login "172.18.0.50" --username admin --password "S6tD6dwe5WA5xuWd" --insecure
+argocd login "localhost:8080" --username admin --password "S6tD6dwe5WA5xuWd" --insecure
 ```
 
 - Add cluster to ArgoCD
